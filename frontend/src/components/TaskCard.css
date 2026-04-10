@@ -1,4 +1,5 @@
 .task-card {
+  cursor: pointer;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
@@ -59,6 +60,10 @@
 .status-done {
   color: var(--status-done-color);
   background: var(--status-done-bg);
+}
+.status-done-but-breached {
+  color: var(--status-done-but-breached-color);
+  background: var(--status-done-but-breached-bg);
 }
 
 /* Title */

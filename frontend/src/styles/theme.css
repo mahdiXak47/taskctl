@@ -34,14 +34,16 @@
   --border-color: rgba(0, 71, 171, 0.18);
 
   /* Status colours */
-  --status-not-started-color: #3d5d78;
-  --status-not-started-bg:    rgba(61, 93, 120, 0.1);
-  --status-in-progress-color: #0047ab;
-  --status-in-progress-bg:    rgba(0, 71, 171, 0.1);
-  --status-breached-color:    #b91c1c;
-  --status-breached-bg:       rgba(185, 28, 28, 0.1);
-  --status-done-color:        #15803d;
-  --status-done-bg:           rgba(21, 128, 61, 0.1);
+  --status-not-started-color: #4b5563;
+  --status-not-started-bg:    rgba(107, 114, 128, 0.16);
+  --status-in-progress-color: #ffffff;
+  --status-in-progress-bg:    #0047ab;
+  --status-breached-color:    #ffffff;
+  --status-breached-bg:       #b91c1c;
+  --status-done-color:        #ffffff;
+  --status-done-bg:           #15803d;
+  --status-done-but-breached-color: #7c2d12;
+  --status-done-but-breached-bg:    rgba(234, 179, 8, 0.35);
 
   /* Typography */
   --font-main: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;

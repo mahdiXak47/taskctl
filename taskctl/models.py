@@ -9,6 +9,7 @@ STATUS_NOT_STARTED = "not_started"
 STATUS_IN_PROGRESS = "in_progress"
 STATUS_BREACHED_DEADLINE = "breached_deadline"
 STATUS_DONE_INTIME = "done_intime"
+STATUS_DONE_BUT_BREACHED = "done_but_breached"
 
 
 @dataclass

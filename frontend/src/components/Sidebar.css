@@ -107,3 +107,52 @@
   background: rgba(130, 200, 229, 0.35);
   color: var(--sidebar-text);
 }
+
+/* Footer: user + logout */
+.sidebar-footer {
+  margin-top: auto;
+  padding-bottom: 0.5rem;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.sidebar-user-icon {
+  font-size: 1rem;
+  color: var(--sidebar-icon);
+  flex-shrink: 0;
+}
+
+.sidebar-user-name {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: var(--sidebar-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(185, 28, 28, 0.2);
+  color: #f87171;
+}

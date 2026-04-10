@@ -1,17 +1,19 @@
 import './TaskCard.css'
 
 const STATUS_META = {
-  not_started:       { label: 'Not Started',       icon: 'bi-hourglass',          cls: 'status-not-started' },
-  in_progress:       { label: 'In Progress',        icon: 'bi-play-circle-fill',   cls: 'status-in-progress' },
+  not_started:       { label: 'Not Started',       icon: 'bi-hourglass',               cls: 'status-not-started' },
+  in_progress:       { label: 'In Progress',        icon: 'bi-play-circle-fill',        cls: 'status-in-progress' },
   breached_deadline: { label: 'Breached Deadline',  icon: 'bi-exclamation-circle-fill', cls: 'status-breached' },
-  done_intime:       { label: 'Done',               icon: 'bi-check-circle-fill',  cls: 'status-done' },
+  done_intime:       { label: 'Done',               icon: 'bi-check-circle-fill',       cls: 'status-done' },
+  done_but_breached: { label: 'Done (Late)',         icon: 'bi-check-circle',            cls: 'status-done-but-breached' },
 }
 
-export default function TaskCard({ task }) {
+export default function TaskCard({ task, onClick }) {
   const meta = STATUS_META[task.status] ?? { label: task.status, icon: 'bi-circle', cls: '' }
 
   return (
-    <article className="task-card">
+    <article className="task-card" onClick={onClick} role="button" tabIndex={0}
+      onKeyDown={e => e.key === 'Enter' && onClick?.()}>
       <div className="task-card-top">
         <span className="task-id">#{task.task_id}</span>
         <span className={`status-badge ${meta.cls}`}>

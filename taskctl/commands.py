@@ -9,6 +9,7 @@ from .models import (
     STATUS_IN_PROGRESS,
     STATUS_BREACHED_DEADLINE,
     STATUS_DONE_INTIME,
+    STATUS_DONE_BUT_BREACHED,
 )
 from .storage import ensure_initialized, save_task, load_tasks_in_range, find_task, delete_task, update_task
 
@@ -172,8 +173,9 @@ def cmd_done(task_id: str) -> None:
         return
 
     now = datetime.now()
+    new_status = STATUS_DONE_INTIME if status == STATUS_IN_PROGRESS else STATUS_DONE_BUT_BREACHED
     update_task(task_id, file_path, {
-        "status": STATUS_DONE_INTIME,
+        "status": new_status,
         "end_time": now.strftime(TIMESTAMP_FORMAT),
     })
 
@@ -194,6 +196,9 @@ def cmd_comment(task_id: str, message: str) -> None:
 
     task, file_path = result
     comments = task.get("comments") or []
-    comments.append(message)
+    comments.append({
+        "text": message,
+        "created_at": datetime.now().strftime(TIMESTAMP_FORMAT),
+    })
     update_task(task_id, file_path, {"comments": comments})
     print(f"Comment added to task '{task_id}'.")

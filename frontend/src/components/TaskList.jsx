@@ -7,7 +7,7 @@ const DURATION_OPTIONS = [
   { label: '30 days', value: 30 },
 ]
 
-export default function TaskList({ tasks, loading, error, days, setDays, onRefresh }) {
+export default function TaskList({ tasks, loading, error, days, setDays, onRefresh, onTaskClick }) {
   return (
     <main className="task-list-pane">
       <header className="task-list-header">
@@ -63,7 +63,7 @@ export default function TaskList({ tasks, loading, error, days, setDays, onRefre
         {!loading && !error && tasks.length > 0 && (
           <div className="task-grid">
             {tasks.map(task => (
-              <TaskCard key={task.task_id} task={task} />
+              <TaskCard key={task.task_id} task={task} onClick={() => onTaskClick(task)} />
             ))}
           </div>
         )}
