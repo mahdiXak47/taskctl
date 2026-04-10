@@ -65,6 +65,17 @@ def delete_task(task_id: str, file_path: Path) -> None:
         yaml.dump(tasks, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
 
+def update_task(task_id: str, file_path: Path, changes: dict) -> None:
+    with file_path.open("r") as f:
+        tasks = yaml.safe_load(f) or []
+    for task in tasks:
+        if task.get("task_id") == task_id:
+            task.update(changes)
+            break
+    with file_path.open("w") as f:
+        yaml.dump(tasks, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+
 def save_task(task_dict: dict, dt: datetime) -> None:
     path = _daily_file(dt)
     tasks = load_tasks(dt)

@@ -7,8 +7,10 @@ from .models import (
     TIMESTAMP_FORMAT,
     STATUS_NOT_STARTED,
     STATUS_IN_PROGRESS,
+    STATUS_BREACHED_DEADLINE,
+    STATUS_DONE_INTIME,
 )
-from .storage import ensure_initialized, save_task, load_tasks_in_range, find_task, delete_task
+from .storage import ensure_initialized, save_task, load_tasks_in_range, find_task, delete_task, update_task
 
 _ETA_MIN = timedelta(minutes=5)
 _ETA_MAX = timedelta(days=7)
@@ -147,3 +149,35 @@ def cmd_delete(task_id: str) -> None:
 
     delete_task(task_id, file_path)
     print(f"Task '{task_id}' deleted.")
+
+
+def cmd_done(task_id: str) -> None:
+    if not ensure_initialized():
+        return
+
+    result = find_task(task_id)
+    if result is None:
+        print(f"No task found with id '{task_id}'.")
+        return
+
+    task, file_path = result
+    status = task.get("status")
+
+    if status == STATUS_NOT_STARTED or task.get("started_time") is None:
+        print("This task has not been started yet.")
+        return
+
+    if status not in (STATUS_IN_PROGRESS, STATUS_BREACHED_DEADLINE):
+        print(f"Task is already '{status}' and cannot be marked done.")
+        return
+
+    now = datetime.now()
+    update_task(task_id, file_path, {
+        "status": STATUS_DONE_INTIME,
+        "end_time": now.strftime(TIMESTAMP_FORMAT),
+    })
+
+    if status == STATUS_IN_PROGRESS:
+        print("Great, you have done the task in the estimated time!")
+    else:
+        print("Not bad, you done the task after all. Estimate better next time or work harder!")
