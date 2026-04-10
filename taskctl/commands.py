@@ -181,3 +181,19 @@ def cmd_done(task_id: str) -> None:
         print("Great, you have done the task in the estimated time!")
     else:
         print("Not bad, you done the task after all. Estimate better next time or work harder!")
+
+
+def cmd_comment(task_id: str, message: str) -> None:
+    if not ensure_initialized():
+        return
+
+    result = find_task(task_id)
+    if result is None:
+        print(f"No task found with id '{task_id}'.")
+        return
+
+    task, file_path = result
+    comments = task.get("comments") or []
+    comments.append(message)
+    update_task(task_id, file_path, {"comments": comments})
+    print(f"Comment added to task '{task_id}'.")

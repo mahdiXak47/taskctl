@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from .commands import cmd_create, cmd_list, cmd_delete, cmd_done
+from .commands import cmd_create, cmd_list, cmd_delete, cmd_done, cmd_comment
 
 
 def main():
@@ -14,6 +14,11 @@ def main():
     create_parser.add_argument("-d", "--description", default=None, help="Task description")
     create_parser.add_argument("-e", "--eta", default=None, help="ETA (e.g. 30m, 1h, 1d)")
     create_parser.add_argument("-s", "--start", action="store_true", help="Start the task immediately")
+
+    # taskctl comment
+    comment_parser = subparsers.add_parser("comment", help="Add a comment to a task")
+    comment_parser.add_argument("task_id", help="ID of the task")
+    comment_parser.add_argument("-m", "--message", required=True, help="Comment message")
 
     # taskctl done
     done_parser = subparsers.add_parser("done", help="Mark a task as done")
@@ -36,6 +41,8 @@ def main():
             eta=args.eta,
             start=args.start,
         )
+    elif args.command == "comment":
+        cmd_comment(task_id=args.task_id, message=args.message)
     elif args.command == "done":
         cmd_done(task_id=args.task_id)
     elif args.command == "delete":
