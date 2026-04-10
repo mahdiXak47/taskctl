@@ -1,5 +1,4 @@
-import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import yaml
@@ -35,6 +34,16 @@ def load_tasks(dt: datetime) -> list:
     with path.open("r") as f:
         data = yaml.safe_load(f) or []
     return data
+
+
+def load_tasks_in_range(days: int) -> list[dict]:
+    """Return all tasks from daily files covering the last `days` days."""
+    now = datetime.now()
+    tasks = []
+    for offset in range(days):
+        dt = now - timedelta(days=offset)
+        tasks.extend(load_tasks(dt))
+    return tasks
 
 
 def save_task(task_dict: dict, dt: datetime) -> None:

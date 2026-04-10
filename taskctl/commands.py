@@ -8,7 +8,7 @@ from .models import (
     STATUS_NOT_STARTED,
     STATUS_IN_PROGRESS,
 )
-from .storage import ensure_initialized, save_task
+from .storage import ensure_initialized, save_task, load_tasks_in_range
 
 VALID_ETA = {"30m", "1h", "2h", "4h", "8h", "1d", "7d", "30d"}
 
@@ -49,6 +49,33 @@ def _prompt_eta() -> Optional[str]:
 def _prompt_start_now() -> bool:
     answer = input("Start now? (Y/n): ").strip().lower()
     return answer in ("", "y", "yes")
+
+
+def cmd_list(duration: Optional[str]) -> None:
+    if not ensure_initialized():
+        return
+
+    days = 1  # default: today only
+    if duration:
+        delta = _parse_eta(duration)
+        if delta is None:
+            print(f"  Invalid duration '{duration}'. Use a number followed by m/h/d (e.g. 7d, 24h).")
+            return
+        days = max(1, round(delta.total_seconds() / 86400) or 1)
+
+    tasks = load_tasks_in_range(days)
+
+    if not tasks:
+        print("No tasks found.")
+        return
+
+    col_id = max(len(t.get("task_id", "")) for t in tasks)
+    col_title = max(len(t.get("title", "")) for t in tasks)
+
+    print(f"{'ID':<{col_id}}  {'TITLE':<{col_title}}  STATUS")
+    print("-" * (col_id + col_title + 12))
+    for t in tasks:
+        print(f"{t.get('task_id', ''):<{col_id}}  {t.get('title', ''):<{col_title}}  {t.get('status', '')}")
 
 
 def cmd_create(title: Optional[str], description: Optional[str], eta: Optional[str], start: bool) -> None:
