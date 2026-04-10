@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from .commands import cmd_create, cmd_list
+from .commands import cmd_create, cmd_list, cmd_delete
 
 
 def main():
@@ -14,6 +14,10 @@ def main():
     create_parser.add_argument("-d", "--description", default=None, help="Task description")
     create_parser.add_argument("-e", "--eta", default=None, help="ETA (e.g. 30m, 1h, 1d)")
     create_parser.add_argument("-s", "--start", action="store_true", help="Start the task immediately")
+
+    # taskctl delete
+    delete_parser = subparsers.add_parser("delete", help="Delete a task")
+    delete_parser.add_argument("task_id", help="ID of the task to delete")
 
     # taskctl list
     list_parser = subparsers.add_parser("list", help="List tasks")
@@ -28,6 +32,8 @@ def main():
             eta=args.eta,
             start=args.start,
         )
+    elif args.command == "delete":
+        cmd_delete(task_id=args.task_id)
     elif args.command == "list":
         cmd_list(duration=args.duration)
     else:

@@ -46,6 +46,25 @@ def load_tasks_in_range(days: int) -> list[dict]:
     return tasks
 
 
+def find_task(task_id: str) -> tuple[dict, Path] | None:
+    """Search all daily YAML files for a task by id. Returns (task_dict, file_path) or None."""
+    for path in sorted(TASKCTL_DIR.glob("tasks-created-*.yaml")):
+        with path.open("r") as f:
+            tasks = yaml.safe_load(f) or []
+        for task in tasks:
+            if task.get("task_id") == task_id:
+                return task, path
+    return None
+
+
+def delete_task(task_id: str, file_path: Path) -> None:
+    with file_path.open("r") as f:
+        tasks = yaml.safe_load(f) or []
+    tasks = [t for t in tasks if t.get("task_id") != task_id]
+    with file_path.open("w") as f:
+        yaml.dump(tasks, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+
 def save_task(task_dict: dict, dt: datetime) -> None:
     path = _daily_file(dt)
     tasks = load_tasks(dt)

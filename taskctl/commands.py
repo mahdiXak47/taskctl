@@ -8,9 +8,10 @@ from .models import (
     STATUS_NOT_STARTED,
     STATUS_IN_PROGRESS,
 )
-from .storage import ensure_initialized, save_task, load_tasks_in_range
+from .storage import ensure_initialized, save_task, load_tasks_in_range, find_task, delete_task
 
-VALID_ETA = {"30m", "1h", "2h", "4h", "8h", "1d", "7d", "30d"}
+_ETA_MIN = timedelta(minutes=5)
+_ETA_MAX = timedelta(days=7)
 
 
 def _parse_eta(eta: str) -> Optional[timedelta]:
@@ -20,7 +21,10 @@ def _parse_eta(eta: str) -> Optional[timedelta]:
     unit = eta[-1]
     if unit not in units or not eta[:-1].isdigit():
         return None
-    return timedelta(**{units[unit]: int(eta[:-1])})
+    delta = timedelta(**{units[unit]: int(eta[:-1])})
+    if not (_ETA_MIN <= delta <= _ETA_MAX):
+        return None
+    return delta
 
 
 def _prompt_title() -> str:
@@ -37,13 +41,13 @@ def _prompt_description() -> str:
 
 def _prompt_eta() -> Optional[str]:
     while True:
-        value = input("ETA (e.g. 30m, 1h, 4h, 1d, 7d — enter to skip): ").strip()
+        value = input("ETA (5m–7d, e.g. 30m, 2h, 1d — enter to skip): ").strip()
         if not value:
             return None
         delta = _parse_eta(value)
         if delta is not None:
             return value
-        print("  Invalid format. Use a number followed by m/h/d (e.g. 2h, 1d).")
+        print("  Invalid value. Use a number + m/h/d in the range 5m to 7d (e.g. 30m, 4h, 3d).")
 
 
 def _prompt_start_now() -> bool:
@@ -121,3 +125,25 @@ def cmd_create(title: Optional[str], description: Optional[str], eta: Optional[s
         print(f"  ETA   : {eta}")
     if expected_end_time:
         print(f"  Due by: {expected_end_time}")
+
+
+def cmd_delete(task_id: str) -> None:
+    if not ensure_initialized():
+        return
+
+    result = find_task(task_id)
+    if result is None:
+        print(f"No task found with id '{task_id}'.")
+        return
+
+    task, file_path = result
+
+    if task.get("status") == STATUS_IN_PROGRESS:
+        print(f"Task '{task.get('title')}' is currently in progress.")
+        answer = input("Are you sure you want to delete it? (y/N): ").strip().lower()
+        if answer not in ("y", "yes"):
+            print("Deletion cancelled.")
+            return
+
+    delete_task(task_id, file_path)
+    print(f"Task '{task_id}' deleted.")
