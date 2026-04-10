@@ -1,0 +1,2 @@
+[console_scripts]
+taskctl = taskctl.main:main

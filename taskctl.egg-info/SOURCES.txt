@@ -1,0 +1,12 @@
+pyproject.toml
+taskctl/__init__.py
+taskctl/commands.py
+taskctl/main.py
+taskctl/models.py
+taskctl/storage.py
+taskctl.egg-info/PKG-INFO
+taskctl.egg-info/SOURCES.txt
+taskctl.egg-info/dependency_links.txt
+taskctl.egg-info/entry_points.txt
+taskctl.egg-info/requires.txt
+taskctl.egg-info/top_level.txt
