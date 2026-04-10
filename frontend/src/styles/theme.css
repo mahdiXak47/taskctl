@@ -1,0 +1,54 @@
+:root {
+  /* Palette */
+  --palette-cobalt: #0047ab;
+  --palette-navy:   #050557;
+  --palette-sky:    #82c8e5;
+  --palette-alice:  #f0f8ff;
+  --palette-white:  #ffffff;
+
+  /* Sidebar (dark) */
+  --sidebar-bg:         var(--palette-navy);
+  --sidebar-text:       var(--palette-alice);
+  --sidebar-muted:      #b8d8f0;
+  --sidebar-icon:       #8ec4e8;
+  --sidebar-border:     rgba(130, 200, 229, 0.32);
+  --sidebar-hover-bg:   rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg:  rgba(130, 200, 229, 0.28);
+
+  /* Main area (light) */
+  --main-bg:       var(--palette-alice);
+  --header-bg:     #dbeaf6;
+
+  /* Cards */
+  --card-bg:           var(--palette-white);
+  --card-border:       rgba(0, 71, 171, 0.15);
+  --card-shadow:       0 2px 8px rgba(0, 35, 80, 0.07);
+  --card-hover-shadow: 0 6px 20px rgba(0, 35, 80, 0.13);
+
+  /* Text */
+  --text-primary: #0d1b2a;
+  --text-muted:   #3d5d78;
+  --text-subtle:  #5a7a95;
+
+  /* Borders */
+  --border-color: rgba(0, 71, 171, 0.18);
+
+  /* Status colours */
+  --status-not-started-color: #3d5d78;
+  --status-not-started-bg:    rgba(61, 93, 120, 0.1);
+  --status-in-progress-color: #0047ab;
+  --status-in-progress-bg:    rgba(0, 71, 171, 0.1);
+  --status-breached-color:    #b91c1c;
+  --status-breached-bg:       rgba(185, 28, 28, 0.1);
+  --status-done-color:        #15803d;
+  --status-done-bg:           rgba(21, 128, 61, 0.1);
+
+  /* Typography */
+  --font-main: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Vazirmatn', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}

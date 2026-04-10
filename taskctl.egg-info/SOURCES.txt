@@ -3,6 +3,7 @@ taskctl/__init__.py
 taskctl/commands.py
 taskctl/main.py
 taskctl/models.py
+taskctl/server.py
 taskctl/storage.py
 taskctl.egg-info/PKG-INFO
 taskctl.egg-info/SOURCES.txt

@@ -28,6 +28,9 @@ def main():
     delete_parser = subparsers.add_parser("delete", help="Delete a task")
     delete_parser.add_argument("task_id", help="ID of the task to delete")
 
+    # taskctl serve
+    subparsers.add_parser("serve", help="Start the web UI server on localhost:8000")
+
     # taskctl list
     list_parser = subparsers.add_parser("list", help="List tasks")
     list_parser.add_argument("-d", "--duration", default=None, help="Duration to look back (e.g. 7d, 24h)")
@@ -49,6 +52,10 @@ def main():
         cmd_delete(task_id=args.task_id)
     elif args.command == "list":
         cmd_list(duration=args.duration)
+    elif args.command == "serve":
+        import uvicorn
+        print("Starting taskctl web server at http://localhost:8000")
+        uvicorn.run("taskctl.server:app", host="127.0.0.1", port=8000, reload=False)
     else:
         parser.print_help()
         sys.exit(1)
