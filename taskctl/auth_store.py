@@ -4,10 +4,9 @@ import time
 from pathlib import Path
 
 import jwt
-import yaml
 
-TASKCTL_DIR = Path.home() / ".taskctl"
-USERS_FILE  = TASKCTL_DIR / "users.yaml"
+from .database import init_db, db_user_exists, db_insert_user, db_get_user, TASKCTL_DIR
+
 SECRET_FILE = TASKCTL_DIR / "secret.key"
 
 ACCESS_EXPIRY  = 15 * 60        # 15 minutes
@@ -30,19 +29,6 @@ def _hash_password(password: str, salt: str) -> str:
     ).hex()
 
 
-def _load_users() -> dict:
-    if not USERS_FILE.exists():
-        return {}
-    with USERS_FILE.open() as f:
-        return yaml.safe_load(f) or {}
-
-
-def _save_users(users: dict) -> None:
-    TASKCTL_DIR.mkdir(parents=True, exist_ok=True)
-    with USERS_FILE.open("w") as f:
-        yaml.dump(users, f, default_flow_style=False, allow_unicode=True)
-
-
 def register_user(
     username: str,
     password: str,
@@ -50,23 +36,26 @@ def register_user(
     last_name: str = "",
     email: str = "",
 ) -> None:
-    users = _load_users()
-    if username in users:
+    init_db()
+    if db_user_exists(username):
         raise ValueError("Username already taken.")
     salt = secrets.token_hex(16)
-    users[username] = {
-        "password_hash": _hash_password(password, salt),
-        "salt": salt,
-        "first_name": first_name,
-        "last_name": last_name,
-        "email": email,
-    }
-    _save_users(users)
+    from .models import TIMESTAMP_FORMAT
+    created_at = time.strftime(TIMESTAMP_FORMAT)
+    db_insert_user(
+        username=username,
+        password_hash=_hash_password(password, salt),
+        salt=salt,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        created_at=created_at,
+    )
 
 
 def verify_password(username: str, password: str) -> bool:
-    users = _load_users()
-    user = users.get(username)
+    init_db()
+    user = db_get_user(username)
     if not user:
         return False
     return user["password_hash"] == _hash_password(password, user["salt"])
@@ -91,7 +80,6 @@ def create_refresh_token(username: str) -> str:
 
 
 def verify_token(token: str, token_type: str = "access") -> str | None:
-    """Returns username if valid, None otherwise."""
     try:
         payload = jwt.decode(token, _get_secret(), algorithms=["HS256"])
         if payload.get("type") != token_type:

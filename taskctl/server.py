@@ -1,12 +1,9 @@
-from datetime import datetime, timedelta
-from pathlib import Path
-
-import yaml
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
+from .database import init_db, db_tasks_in_range
 from .auth_store import (
     create_access_token,
     create_refresh_token,
@@ -17,6 +14,12 @@ from .auth_store import (
 
 app = FastAPI(title="taskctl API")
 
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -24,7 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-TASKCTL_DIR = Path.home() / ".taskctl"
 _bearer = HTTPBearer()
 
 
@@ -91,25 +93,9 @@ def refresh_token(body: RefreshBody):
 
 # ── Tasks endpoint ────────────────────────────────────────────────────────────
 
-def _load_range(days: int) -> list[dict]:
-    if not TASKCTL_DIR.exists():
-        return []
-    now = datetime.now()
-    tasks = []
-    for offset in range(days):
-        dt = now - timedelta(days=offset)
-        date_str = dt.strftime("%d%B%Y").lower()
-        path = TASKCTL_DIR / f"tasks-created-{date_str}.yaml"
-        if path.exists():
-            with path.open("r") as f:
-                data = yaml.safe_load(f) or []
-            tasks.extend(data)
-    return tasks
-
-
 @app.get("/api/tasks")
 def get_tasks(
     days: int = Query(default=7, ge=1, le=365),
     current_user: str = Depends(_current_user),
 ) -> list[dict]:
-    return _load_range(days)
+    return db_tasks_in_range(days)
