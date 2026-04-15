@@ -56,6 +56,14 @@ def init_db() -> None:
                 text       TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS events (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    TEXT REFERENCES users(username) ON DELETE SET NULL,
+                task_id    TEXT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+                event_type VARCHAR(32) NOT NULL,
+                timestamp  VARCHAR(20) NOT NULL
+            );
         """)
 
 
@@ -164,7 +172,7 @@ def db_tasks_in_range(days: int) -> list[dict]:
     with get_connection() as con:
         rows = con.execute(
             """SELECT * FROM tasks
-               WHERE DATE(created_time) >= DATE('now', ?)
+               WHERE SUBSTR(REPLACE(created_time, '/', '-'), 1, 10) >= DATE('now', ?)
                ORDER BY created_time DESC""",
             (f"-{days} days",),
         ).fetchall()
@@ -198,3 +206,32 @@ def db_update_task(task_id: str, changes: dict) -> None:
 def db_delete_task(task_id: str) -> None:
     with get_connection() as con:
         con.execute("DELETE FROM tasks WHERE task_id = ?", (task_id,))
+
+
+# ── Event operations ──────────────────────────────────────────────────────────
+
+def db_insert_event(user_id: str | None, task_id: str, event_type: str, timestamp: str) -> None:
+    with get_connection() as con:
+        con.execute(
+            "INSERT INTO events (user_id, task_id, event_type, timestamp) VALUES (?, ?, ?, ?)",
+            (user_id, task_id, event_type, timestamp),
+        )
+
+
+def db_get_task_last_event(task_id: str) -> dict | None:
+    with get_connection() as con:
+        row = con.execute(
+            """SELECT * FROM events WHERE task_id = ?
+               ORDER BY timestamp DESC, id DESC LIMIT 1""",
+            (task_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def db_get_user_events(user_id: str) -> list[dict]:
+    with get_connection() as con:
+        rows = con.execute(
+            "SELECT * FROM events WHERE user_id = ? ORDER BY timestamp DESC",
+            (user_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]

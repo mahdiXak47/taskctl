@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from .commands import cmd_create, cmd_list, cmd_delete, cmd_done, cmd_comment, cmd_start
+from .commands import cmd_create, cmd_list, cmd_delete, cmd_done, cmd_comment, cmd_start, cmd_describe
 
 
 def main():
@@ -14,6 +14,11 @@ def main():
     create_parser.add_argument("-d", "--description", default=None, help="Task description")
     create_parser.add_argument("-e", "--eta", default=None, help="ETA (e.g. 30m, 1h, 1d)")
     create_parser.add_argument("-s", "--start", action="store_true", help="Start the task immediately")
+
+    # taskctl describe
+    describe_parser = subparsers.add_parser("describe", help="Show details of a task")
+    describe_parser.add_argument("task_id", help="ID of the task")
+    describe_parser.add_argument("-v", "--verbose", action="store_true", help="Show all comments")
 
     # taskctl start
     start_parser = subparsers.add_parser("start", help="Start a task that has not been started yet")
@@ -38,10 +43,13 @@ def main():
     # taskctl list
     list_parser = subparsers.add_parser("list", help="List tasks")
     list_parser.add_argument("-d", "--duration", default=None, help="Duration to look back (e.g. 7d, 24h)")
+    list_parser.add_argument("-v", "--verbose", action="store_true", help="Show last event per task")
 
     args = parser.parse_args()
 
-    if args.command == "start":
+    if args.command == "describe":
+        cmd_describe(task_id=args.task_id, verbose=args.verbose)
+    elif args.command == "start":
         cmd_start(task_id=args.task_id)
     elif args.command == "create":
         cmd_create(
@@ -57,7 +65,7 @@ def main():
     elif args.command == "delete":
         cmd_delete(task_id=args.task_id)
     elif args.command == "list":
-        cmd_list(duration=args.duration)
+        cmd_list(duration=args.duration, verbose=args.verbose)
     elif args.command == "serve":
         import uvicorn
         print("Starting taskctl web server at http://localhost:8000")

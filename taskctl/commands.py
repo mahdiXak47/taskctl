@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as date_type
 from typing import Optional
 
 from .models import (
@@ -11,7 +11,47 @@ from .models import (
     STATUS_DONE_INTIME,
     STATUS_DONE_BUT_BREACHED,
 )
-from .storage import ensure_initialized, save_task, load_tasks_in_range, find_task, delete_task, update_task
+from .storage import ensure_initialized, save_task, load_tasks_in_range, find_task, delete_task, update_task, record_event, get_task_last_event
+
+
+def _format_timestamp(ts: str) -> str:
+    """Return a human-friendly label for a stored timestamp string."""
+    try:
+        dt = datetime.strptime(ts, TIMESTAMP_FORMAT)
+    except (ValueError, TypeError):
+        return ts or ""
+
+    now = datetime.now()
+    diff = now - dt
+    total_seconds = diff.total_seconds()
+    time_str = dt.strftime("%H:%M")
+
+    # Past timestamps
+    if 0 <= total_seconds < 60 * 60:                   # 0-59 minutes ago
+        minutes = max(1, int(total_seconds // 60))
+        unit = "minute" if minutes == 1 else "minutes"
+        return f"{minutes} {unit} ago"
+
+    if total_seconds < 12 * 60 * 60:                   # 1-12 hours ago
+        hours = int(total_seconds // 3600)
+        unit = "hour" if hours == 1 else "hours"
+        return f"{hours} {unit} ago"
+
+    today = now.date()
+    yesterday = today - timedelta(days=1)
+    dt_date = dt.date()
+
+    tomorrow = today + timedelta(days=1)
+
+    if dt_date == today:
+        return f"today {time_str}"
+    if dt_date == yesterday:
+        return f"yesterday {time_str}"
+    if dt_date == tomorrow:
+        return f"tomorrow {time_str}"
+
+    return ts                                           # original for anything older/farther
+
 
 _ETA_MIN = timedelta(minutes=5)
 _ETA_MAX = timedelta(days=7)
@@ -58,7 +98,15 @@ def _prompt_start_now() -> bool:
     return answer in ("", "y", "yes")
 
 
-def cmd_list(duration: Optional[str]) -> None:
+def _last_event(task: dict) -> tuple[str, str]:
+    """Return (event_type, timestamp) for the most recent event from the DB."""
+    row = get_task_last_event(task["task_id"])
+    if row:
+        return (row["event_type"], row["timestamp"])
+    return ("", "")
+
+
+def cmd_list(duration: Optional[str], verbose: bool = False) -> None:
     if not ensure_initialized():
         return
 
@@ -76,13 +124,31 @@ def cmd_list(duration: Optional[str]) -> None:
         print("No tasks found.")
         return
 
-    col_id = max(len(t.get("task_id", "")) for t in tasks)
-    col_title = max(len(t.get("title", "")) for t in tasks)
+    col_id    = max(len(t.get("task_id", "")) for t in tasks)
+    col_title = max(len(t.get("title",   "")) for t in tasks)
 
-    print(f"{'ID':<{col_id}}  {'TITLE':<{col_title}}  STATUS")
-    print("-" * (col_id + col_title + 12))
-    for t in tasks:
-        print(f"{t.get('task_id', ''):<{col_id}}  {t.get('title', ''):<{col_title}}  {t.get('status', '')}")
+    if verbose:
+        events = [_last_event(t) for t in tasks]
+        col_event = max(
+            len(f"{label} {_format_timestamp(ts)}" if label else "")
+            for label, ts in events
+        )
+        col_event = max(col_event, len("EVENT"))
+        print(f"{'ID':<{col_id}}  {'TITLE':<{col_title}}  {'STATUS':<20}  {'EVENT':<{col_event}}")
+        print("-" * (col_id + col_title + col_event + 26))
+        for t, (label, ts) in zip(tasks, events):
+            event_str = f"{label} {_format_timestamp(ts)}" if label else ""
+            print(
+                f"{t.get('task_id',''):<{col_id}}  "
+                f"{t.get('title',''):<{col_title}}  "
+                f"{t.get('status',''):<20}  "
+                f"{event_str:<{col_event}}"
+            )
+    else:
+        print(f"{'ID':<{col_id}}  {'TITLE':<{col_title}}  STATUS")
+        print("-" * (col_id + col_title + 12))
+        for t in tasks:
+            print(f"{t.get('task_id',''):<{col_id}}  {t.get('title',''):<{col_title}}  {t.get('status','')}")
 
 
 def cmd_create(title: Optional[str], description: Optional[str], eta: Optional[str], start: bool) -> None:
@@ -120,6 +186,9 @@ def cmd_create(title: Optional[str], description: Optional[str], eta: Optional[s
     )
 
     save_task(task.to_dict(), now)
+    record_event(None, task_id, "created", now.strftime(TIMESTAMP_FORMAT))
+    if start:
+        record_event(None, task_id, "started", now.strftime(TIMESTAMP_FORMAT))
 
     print(f"\nTask created [id: {task_id}]")
     print(f"  Title : {title}")
@@ -127,7 +196,7 @@ def cmd_create(title: Optional[str], description: Optional[str], eta: Optional[s
     if eta:
         print(f"  ETA   : {eta}")
     if expected_end_time:
-        print(f"  Due by: {expected_end_time}")
+        print(f"  Due by: {_format_timestamp(expected_end_time)}")
 
 
 def cmd_delete(task_id: str) -> None:
@@ -148,6 +217,8 @@ def cmd_delete(task_id: str) -> None:
             print("Deletion cancelled.")
             return
 
+    now = datetime.now()
+    record_event(None, task_id, "deleted", now.strftime(TIMESTAMP_FORMAT))
     delete_task(task_id, file_path)
     print(f"Task '{task_id}' deleted.")
 
@@ -178,11 +249,76 @@ def cmd_done(task_id: str) -> None:
         "status": new_status,
         "end_time": now.strftime(TIMESTAMP_FORMAT),
     })
+    record_event(None, task_id, "is done", now.strftime(TIMESTAMP_FORMAT))
 
     if status == STATUS_IN_PROGRESS:
         print("Great, you have done the task in the estimated time!")
     else:
         print("Not bad, you done the task after all. Estimate better next time or work harder!")
+
+
+def _format_remaining(expected_end_time: str) -> str:
+    try:
+        due = datetime.strptime(expected_end_time, TIMESTAMP_FORMAT)
+    except (ValueError, TypeError):
+        return "no deadline set"
+    diff = due - datetime.now()
+    if diff.total_seconds() < 0:
+        secs = int(-diff.total_seconds())
+        d, rem = divmod(secs, 86400)
+        h, rem = divmod(rem, 3600)
+        m = rem // 60
+        parts = []
+        if d: parts.append(f"{d}d")
+        if h: parts.append(f"{h}h")
+        if m: parts.append(f"{m}m")
+        return f"deadline breached by {' '.join(parts) or '< 1m'}"
+    secs = int(diff.total_seconds())
+    d, rem = divmod(secs, 86400)
+    h, rem = divmod(rem, 3600)
+    m = rem // 60
+    parts = []
+    if d: parts.append(f"{d}d")
+    if h: parts.append(f"{h}h")
+    if m: parts.append(f"{m}m")
+    return ' '.join(parts) or '< 1m'
+
+
+def cmd_describe(task_id: str, verbose: bool = False) -> None:
+    if not ensure_initialized():
+        return
+
+    result = find_task(task_id)
+    if result is None:
+        print(f"what task do you mean?")
+        print(f"i do not find any task with id {task_id}")
+        return
+
+    task, _ = result
+    title = task.get("title", "")
+    status = task.get("status", "")
+    expected_end_time = task.get("expected_end_time")
+    comments = task.get("comments") or []
+
+    print(f"{title} [{status}]")
+
+    if expected_end_time:
+        print(f"Time remaining: {_format_remaining(expected_end_time)}")
+    else:
+        print("Time remaining: no deadline set")
+
+    if comments:
+        print()
+        displayed = comments if verbose else comments[-5:]
+        if not verbose and len(comments) > 5:
+            print(f"  (showing last 5 of {len(comments)} comments, use -v to see all)")
+        for c in displayed:
+            text = c.get("text", "")
+            ts = c.get("created_at", "")
+            print(f"  [{_format_timestamp(ts)}] {text}")
+    else:
+        print()
+        print("  no comments yet")
 
 
 def cmd_start(task_id: str) -> None:
@@ -200,7 +336,7 @@ def cmd_start(task_id: str) -> None:
 
     if status != STATUS_NOT_STARTED:
         started_time = task.get("started_time", "unknown")
-        print(f"what was you doing until now? the task is already started at {started_time}")
+        print(f"what was you doing until now? the task is already started at {_format_timestamp(started_time)}")
         return
 
     now = datetime.now()
@@ -213,6 +349,7 @@ def cmd_start(task_id: str) -> None:
         "started_time": now.strftime(TIMESTAMP_FORMAT),
         "expected_end_time": expected_end_time,
     })
+    record_event(None, task_id, "started", now.strftime(TIMESTAMP_FORMAT))
 
     print(f"lets go. the task has been started")
     if eta:
@@ -229,10 +366,12 @@ def cmd_comment(task_id: str, message: str) -> None:
         return
 
     task, file_path = result
+    now = datetime.now()
     comments = task.get("comments") or []
     comments.append({
         "text": message,
-        "created_at": datetime.now().strftime(TIMESTAMP_FORMAT),
+        "created_at": now.strftime(TIMESTAMP_FORMAT),
     })
     update_task(task_id, file_path, {"comments": comments})
+    record_event(None, task_id, "commented", now.strftime(TIMESTAMP_FORMAT))
     print(f"Comment added to task '{task_id}'.")

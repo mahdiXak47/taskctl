@@ -15,6 +15,8 @@ from .database import (
     db_tasks_in_range,
     db_update_task,
     db_delete_task,
+    db_insert_event,
+    db_get_task_last_event,
     TASKCTL_DIR,
 )
 
@@ -69,3 +71,13 @@ def update_task(task_id: str, file_path: Path, changes: dict) -> None:  # file_p
 def save_task(task_dict: dict, dt: datetime) -> None:
     init_db()
     db_insert_task(task_dict)
+
+
+def record_event(user_id: str | None, task_id: str, event_type: str, timestamp: str) -> None:
+    init_db()
+    db_insert_event(user_id, task_id, event_type, timestamp)
+
+
+def get_task_last_event(task_id: str) -> dict | None:
+    init_db()
+    return db_get_task_last_event(task_id)
