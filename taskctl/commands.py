@@ -106,8 +106,14 @@ def _last_event(task: dict) -> tuple[str, str]:
     return ("", "")
 
 
-def cmd_list(duration: Optional[str], verbose: bool = False) -> None:
+def cmd_list(duration: Optional[str], verbose: bool = False, status: Optional[str] = None) -> None:
     if not ensure_initialized():
+        return
+
+    _valid = (STATUS_NOT_STARTED, STATUS_IN_PROGRESS, STATUS_BREACHED_DEADLINE, STATUS_DONE_INTIME, STATUS_DONE_BUT_BREACHED)
+    if status and status not in _valid:
+        print(f"  Unknown status '{status}'.")
+        print(f"  Valid values: {', '.join(_valid)}")
         return
 
     days = 1  # default: today only
@@ -119,6 +125,9 @@ def cmd_list(duration: Optional[str], verbose: bool = False) -> None:
         days = max(1, round(delta.total_seconds() / 86400) or 1)
 
     tasks = load_tasks_in_range(days)
+
+    if status:
+        tasks = [t for t in tasks if t.get("status") == status]
 
     if not tasks:
         print("No tasks found.")

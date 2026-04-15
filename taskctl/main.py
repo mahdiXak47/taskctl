@@ -44,6 +44,7 @@ def main():
     list_parser = subparsers.add_parser("list", help="List tasks")
     list_parser.add_argument("-d", "--duration", default=None, help="Duration to look back (e.g. 7d, 24h)")
     list_parser.add_argument("-v", "--verbose", action="store_true", help="Show last event per task")
+    list_parser.add_argument("-s", "--status", default=None, help="Filter by status (e.g. in_progress, done_intime, not_started)")
 
     args = parser.parse_args()
 
@@ -65,7 +66,7 @@ def main():
     elif args.command == "delete":
         cmd_delete(task_id=args.task_id)
     elif args.command == "list":
-        cmd_list(duration=args.duration, verbose=args.verbose)
+        cmd_list(duration=args.duration, verbose=args.verbose, status=args.status)
     elif args.command == "serve":
         import uvicorn
         print("Starting taskctl web server at http://localhost:8000")
