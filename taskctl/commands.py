@@ -185,6 +185,40 @@ def cmd_done(task_id: str) -> None:
         print("Not bad, you done the task after all. Estimate better next time or work harder!")
 
 
+def cmd_start(task_id: str) -> None:
+    if not ensure_initialized():
+        return
+
+    result = find_task(task_id)
+    if result is None:
+        print(f"what task do you mean?")
+        print(f"i do not find any task with id {task_id}")
+        return
+
+    task, file_path = result
+    status = task.get("status")
+
+    if status != STATUS_NOT_STARTED:
+        started_time = task.get("started_time", "unknown")
+        print(f"what was you doing until now? the task is already started at {started_time}")
+        return
+
+    now = datetime.now()
+    eta = task.get("eta")
+    delta = _parse_eta(eta) if eta else None
+    expected_end_time = (now + delta).strftime(TIMESTAMP_FORMAT) if delta else None
+
+    update_task(task_id, file_path, {
+        "status": STATUS_IN_PROGRESS,
+        "started_time": now.strftime(TIMESTAMP_FORMAT),
+        "expected_end_time": expected_end_time,
+    })
+
+    print(f"lets go. the task has been started")
+    if eta:
+        print(f"you have {eta} time to done this task")
+
+
 def cmd_comment(task_id: str, message: str) -> None:
     if not ensure_initialized():
         return
