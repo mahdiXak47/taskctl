@@ -32,7 +32,7 @@ def _format_timestamp(ts: str) -> str:
         unit = "minute" if minutes == 1 else "minutes"
         return f"{minutes} {unit} ago"
 
-    if total_seconds < 12 * 60 * 60:                   # 1-12 hours ago
+    if 3600 <= total_seconds < 12 * 60 * 60:            # 1-12 hours ago
         hours = int(total_seconds // 3600)
         unit = "hour" if hours == 1 else "hours"
         return f"{hours} {unit} ago"

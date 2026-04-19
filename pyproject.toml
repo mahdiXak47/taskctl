@@ -11,5 +11,8 @@ dependencies = ["pyyaml", "fastapi", "uvicorn[standard]", "PyJWT"]
 [project.scripts]
 taskctl = "taskctl.main:main"
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [tool.setuptools.packages.find]
 where = ["."]

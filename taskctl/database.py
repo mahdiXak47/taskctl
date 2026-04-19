@@ -60,7 +60,7 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS events (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id    TEXT REFERENCES users(username) ON DELETE SET NULL,
-                task_id    TEXT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+                task_id    TEXT NOT NULL,
                 event_type VARCHAR(32) NOT NULL,
                 timestamp  VARCHAR(20) NOT NULL
             );
